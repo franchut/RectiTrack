@@ -1,1 +1,1 @@
-Hola
+Este repositorio está dedicado a el desarrollo del software de la materia Ingenieria de Software I de la Facultad de Ingeniería en Oberá Misiones.
