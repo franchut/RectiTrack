@@ -1,9 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_mysqldb import MySQL
-import os, logging
+import os
+import logging
+import ssl
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
+import paho.mqtt.publish as publish
 
 logging.basicConfig(format='%(asctime)s - CRUD - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -21,7 +24,19 @@ app.config["MYSQL_HOST"] = os.environ["MYSQL_HOST"]
 app.config['PERMANENT_SESSION_LIFETIME'] = 180
 mysql = MySQL(app)
 
-# Decorador de Autenticación
+MQTT_BROKER = os.environ["MQTT_BROKER"]
+MQTT_PORT = int(os.environ["MQTT_PORT"])
+MQTT_AUTH = {
+    'username': os.environ["MQTT_USER"], 
+    'password': os.environ["MQTT_PASS"]
+}
+
+MQTT_TLS = {
+    'ca_certs': None,
+    'cert_reqs': ssl.CERT_REQUIRED,
+    'tls_version': ssl.PROTOCOL_TLS_CLIENT,
+    'ciphers': None
+}
 
 def require_login(f):
     @wraps(f)
@@ -31,8 +46,6 @@ def require_login(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Ruta del Selector de Tema
-
 @app.route('/set_theme/<theme>')
 @require_login
 def set_theme(theme):
@@ -40,26 +53,73 @@ def set_theme(theme):
         session['theme'] = theme
     return redirect(request.referrer or url_for('index'))
 
-# Rutas de Autenticación y CRUD
+@app.route('/iot', methods=['GET', 'POST'])
+@require_login
+def panel_iot():
+    cur = mysql.connection.cursor()
+    
+    if request.method == 'POST':
+        id_nodo = request.form.get('nodo')
+        accion = request.form.get('action')
+        
+        if not id_nodo:
+            flash('Error: No se especificó un nodo destinatario.')
+            return redirect(url_for('panel_iot'))
+            
+        try:
+            if accion == 'blink':
+                topic = f"{id_nodo}/destello"
+                payload = "1"
+                publish.single(
+                    topic, payload=payload, hostname=MQTT_BROKER, 
+                    port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1
+                )
+                logging.info(f"MQTTS [OK] -> Publicado en {topic}")
+                flash(f"Comando Destello enviado con éxito al nodo {id_nodo}")
+                
+            elif accion == 'setpoint':
+                valor = request.form.get('valor_setpoint')
+                valor_normalizado = valor.replace(',', '.')
+                topic = f"{id_nodo}/setpoint"
+                payload = str(float(valor_normalizado))
+                
+                publish.single(
+                    topic, payload=payload, hostname=MQTT_BROKER, 
+                    port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1
+                )
+                logging.info(f"MQTTS [OK] -> Publicado en {topic} | Valor: {payload}")
+                flash(f"Setpoint actualizado a {payload}°C en el nodo {id_nodo}")
+                
+        except Exception as e:
+            logging.error(f"Falla en comunicación MQTTS: {e}")
+            flash(f"Error de red: No se pudo despachar el comando por MQTTS.")
+            
+        return redirect(url_for('panel_iot'))
+        
+    try:
+        cur.execute("SELECT id_hardware, nombre FROM dispositivos")
+        nodos_db = cur.fetchall()
+    except Exception as e:
+        logging.error(f"Error al leer nodos de la DB: {e}")
+        nodos_db = [('e663a837cb8d2c37', 'Nodo Principal (Pico_01)')]
+    finally:
+        cur.close()
+        
+    return render_template('iot.html', nodos=nodos_db)
 
 @app.route("/registrar", methods=["GET", "POST"])
 def registrar():
-    """Registrar usuario"""
     if request.method == "POST":
-
-        # Ensure username was submitted
         if not request.form.get("usuario"):
-            return "el campo usuario es oblicatorio"
-
-        # Ensure password was submitted
+            return "el campo usuario es obligatorio"
         elif not request.form.get("password"):
-            return "el campo contraseña es oblicatorio"
+            return "el campo contraseña es obligatorio"
 
         passhash = generate_password_hash(request.form.get("password"), method='scrypt', salt_length=16)
         cur = mysql.connection.cursor()
         cur.execute("INSERT INTO usuarios (usuario, hash) VALUES (%s,%s)", (request.form.get("usuario"), passhash[17:]))
         if mysql.connection.affected_rows():
-            flash('Se agregó un usuario')  # usa sesión
+            flash('Se agregó un usuario')
             logging.info("se agregó un usuario")
         mysql.connection.commit()
         return redirect(url_for('index'))
@@ -69,12 +129,10 @@ def registrar():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        # Ensure username was submitted
         if not request.form.get("usuario"):
-            return "el campo usuario es oblicatorio"
-        # Ensure password was submitted
+            return "el campo usuario es obligatorio"
         elif not request.form.get("password"):
-            return "el campo contraseña es oblicatorio"
+            return "el campo contraseña es obligatorio"
 
         cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM usuarios WHERE usuario LIKE %s", (request.form.get("usuario"),))
@@ -107,10 +165,9 @@ def add_contact():
         tel = request.form['tel']
         email = request.form['email']
         cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO contactos (nombre, tel, email) VALUES (%s,%s,%s)"
-                    , (nombre, tel, email))
+        cur.execute("INSERT INTO contactos (nombre, tel, email) VALUES (%s,%s,%s)", (nombre, tel, email))
         if mysql.connection.affected_rows():
-            flash('Se agregó un contacto')  # usa sesión
+            flash('Se agregó un contacto')
             logging.info("se agregó un contacto")
             mysql.connection.commit()
     return redirect(url_for('index'))
@@ -121,7 +178,7 @@ def borrar_contacto(id):
     cur = mysql.connection.cursor()
     cur.execute('DELETE FROM contactos WHERE id = %s', (id,))
     if mysql.connection.affected_rows():
-        flash('Se eliminó un contacto')  # usa sesión
+        flash('Se eliminó un contacto')
         logging.info("se eliminó un contacto")
         mysql.connection.commit()
     return redirect(url_for('index'))
@@ -145,7 +202,7 @@ def actualizar_contacto(id):
         cur = mysql.connection.cursor()
         cur.execute("UPDATE contactos SET nombre=%s, tel=%s, email=%s WHERE id=%s", (nombre, tel, email, id))
     if mysql.connection.affected_rows():
-        flash('Se actualizó un contacto')  # usa sesión
+        flash('Se actualizó un contacto')
         logging.info("se actualizó un contacto")
         mysql.connection.commit()
     return redirect(url_for('index'))

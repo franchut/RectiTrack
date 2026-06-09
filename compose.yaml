@@ -12,6 +12,7 @@ services:
     ports:
       - 3306:3306
     restart: unless-stopped
+
   phpmyadmin:
     image: phpmyadmin
     container_name: phpmyadmin
@@ -23,12 +24,13 @@ services:
       - 8080:80
     depends_on:
       - mariadb
+
   clientemqtt:
     image: clientemqtt
     container_name: clientemqtt
     environment:
       - TZ=America/Argentina/Buenos_Aires 
-      - SERVIDOR=${SERVIDOR} #Se reemplazará por la env var SERVIDOR defineda en .env
+      - SERVIDOR=${SERVIDOR}
       - TOPICO=${TOPICO}
       - MARIADB_SERVER=${MARIADB_SERVER}
       - MARIADB_USER=${MARIADB_USER}
@@ -40,6 +42,7 @@ services:
     restart: unless-stopped
     depends_on:
       - mariadb
+
   mosquitto:
     image: eclipse-mosquitto
     container_name: mosquitto
@@ -54,6 +57,7 @@ services:
       - ./swag/etc/letsencrypt:/var/tmp
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
+
   grafana:
     image: grafana/grafana-oss
     container_name: grafana
@@ -67,10 +71,10 @@ services:
     environment:
       GF_SERVER_PROTOCOL: http
       GF_SERVER_ROOT_URL: https://${DOMINIO}:${PUERTO}/grafana/
-      # GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SERVER_DOMAIN: https://${DOMINIO}
       GF_ANALYTICS_REPORTING_ENABLED: "false"
     restart: unless-stopped
+
   portainer:
     image: portainer/portainer-ce
     container_name: portainer
@@ -80,6 +84,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     restart: unless-stopped
+
   swag:
     image: lscr.io/linuxserver/swag:latest
     container_name: swag
@@ -99,6 +104,7 @@ services:
       - ${PUERTO}:443/tcp
       - 80:80
     restart: unless-stopped
+
   telegrambot:
     image: telegrambot
     container_name: telegrambot
@@ -112,6 +118,7 @@ services:
     restart: unless-stopped
     depends_on:
       - mariadb
+
   crud:
     image: crud
     build:
@@ -123,10 +130,15 @@ services:
       - MYSQL_DB=${CRUD_DB}
       - MYSQL_HOST=${MARIADB_SERVER}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      - MQTT_BROKER=${SERVIDOR}
+      - MQTT_PORT=${PUERTO_MQTTS}
+      - MQTT_USER=${MQTT_USR}
+      - MQTT_PASS=${MQTT_PASS}
     ports:
       - "8000:8000"
     restart: unless-stopped
     depends_on:
       - mariadb
+
 volumes:
   portainer_data:
