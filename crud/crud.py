@@ -53,7 +53,6 @@ def set_theme(theme):
         session['theme'] = theme
     return redirect(request.referrer or url_for('panel_iot'))
 
-# La ruta raíz ahora redirige o procesa directamente el panel IoT
 @app.route('/')
 @require_login
 def index():
