@@ -51,7 +51,13 @@ def require_login(f):
 def set_theme(theme):
     if theme in ['light', 'dark']:
         session['theme'] = theme
-    return redirect(request.referrer or url_for('index'))
+    return redirect(request.referrer or url_for('panel_iot'))
+
+# La ruta raíz ahora redirige o procesa directamente el panel IoT
+@app.route('/')
+@require_login
+def index():
+    return redirect(url_for('panel_iot'))
 
 @app.route('/iot', methods=['GET', 'POST'])
 @require_login
@@ -122,7 +128,7 @@ def registrar():
             flash('Se agregó un usuario')
             logging.info("se agregó un usuario")
         mysql.connection.commit()
-        return redirect(url_for('index'))
+        return redirect(url_for('panel_iot'))
 
     return render_template('registrar.html')
 
@@ -142,74 +148,15 @@ def login():
                 session.permanent = True
                 session["user_id"] = request.form.get("usuario")
                 logging.info("se autenticó correctamente")
-                return redirect(url_for('index'))
+                return redirect(url_for('panel_iot'))
             else:
                 flash('usuario o contraseña incorrecto')
                 return redirect(url_for('login'))
     return render_template('login.html')
-
-@app.route('/')
-@require_login
-def index():
-    cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM contactos')
-    datos = cur.fetchall()
-    cur.close()
-    return render_template('index.html', contactos = datos)
-
-@app.route('/add_contact', methods=['POST'])
-@require_login
-def add_contact():
-    if request.method == 'POST':
-        nombre = request.form['nombre']
-        tel = request.form['tel']
-        email = request.form['email']
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO contactos (nombre, tel, email) VALUES (%s,%s,%s)", (nombre, tel, email))
-        if mysql.connection.affected_rows():
-            flash('Se agregó un contacto')
-            logging.info("se agregó un contacto")
-            mysql.connection.commit()
-    return redirect(url_for('index'))
-
-@app.route('/borrar/<string:id>', methods = ['GET'])
-@require_login
-def borrar_contacto(id):
-    cur = mysql.connection.cursor()
-    cur.execute('DELETE FROM contactos WHERE id = %s', (id,))
-    if mysql.connection.affected_rows():
-        flash('Se eliminó un contacto')
-        logging.info("se eliminó un contacto")
-        mysql.connection.commit()
-    return redirect(url_for('index'))
-
-@app.route('/editar/<id>', methods = ['GET'])
-@require_login
-def conseguir_contacto(id):
-    cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM contactos WHERE id = %s', (id,))
-    datos = cur.fetchone()
-    logging.info(datos)
-    return render_template('editar-contacto.html', contacto = datos)
-
-@app.route('/actualizar/<id>', methods=['POST'])
-@require_login
-def actualizar_contacto(id):
-    if request.method == 'POST':
-        nombre = request.form['nombre']
-        tel = request.form['tel']
-        email = request.form['email']
-        cur = mysql.connection.cursor()
-        cur.execute("UPDATE contactos SET nombre=%s, tel=%s, email=%s WHERE id=%s", (nombre, tel, email, id))
-    if mysql.connection.affected_rows():
-        flash('Se actualizó un contacto')
-        logging.info("se actualizó un contacto")
-        mysql.connection.commit()
-    return redirect(url_for('index'))
 
 @app.route("/logout")
 @require_login
 def logout():
     logging.info("el usuario {} cerró su sesión".format(session.get("user_id")))
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('panel_iot'))
