@@ -18,10 +18,10 @@ app.config["MYSQL_USER"] = os.environ["MYSQL_USER"]
 app.config["MYSQL_PASSWORD"] = os.environ["MYSQL_PASSWORD"]
 app.config["MYSQL_DB"] = os.environ["MYSQL_DB"]
 app.config["MYSQL_HOST"] = os.environ["MYSQL_HOST"]
-app.config['PERMANENT_SESSION_LIFETIME']=180
+app.config['PERMANENT_SESSION_LIFETIME'] = 180
 mysql = MySQL(app)
 
-# rutas
+# Decorador de Autenticación
 
 def require_login(f):
     @wraps(f)
@@ -30,6 +30,17 @@ def require_login(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+# Ruta del Selector de Tema
+
+@app.route('/set_theme/<theme>')
+@require_login
+def set_theme(theme):
+    if theme in ['light', 'dark']:
+        session['theme'] = theme
+    return redirect(request.referrer or url_for('index'))
+
+# Rutas de Autenticación y CRUD
 
 @app.route("/registrar", methods=["GET", "POST"])
 def registrar():
@@ -44,7 +55,7 @@ def registrar():
         elif not request.form.get("password"):
             return "el campo contraseña es oblicatorio"
 
-        passhash=generate_password_hash(request.form.get("password"), method='scrypt', salt_length=16)
+        passhash = generate_password_hash(request.form.get("password"), method='scrypt', salt_length=16)
         cur = mysql.connection.cursor()
         cur.execute("INSERT INTO usuarios (usuario, hash) VALUES (%s,%s)", (request.form.get("usuario"), passhash[17:]))
         if mysql.connection.affected_rows():
@@ -67,11 +78,11 @@ def login():
 
         cur = mysql.connection.cursor()
         cur.execute("SELECT * FROM usuarios WHERE usuario LIKE %s", (request.form.get("usuario"),))
-        rows=cur.fetchone()
-        if(rows):
-            if (check_password_hash('scrypt:32768:8:1$' + rows[2],request.form.get("password"))):
+        rows = cur.fetchone()
+        if rows:
+            if check_password_hash('scrypt:32768:8:1$' + rows[2], request.form.get("password")):
                 session.permanent = True
-                session["user_id"]=request.form.get("usuario")
+                session["user_id"] = request.form.get("usuario")
                 logging.info("se autenticó correctamente")
                 return redirect(url_for('index'))
             else:
@@ -142,6 +153,6 @@ def actualizar_contacto(id):
 @app.route("/logout")
 @require_login
 def logout():
-    session.clear()
     logging.info("el usuario {} cerró su sesión".format(session.get("user_id")))
+    session.clear()
     return redirect(url_for('index'))
