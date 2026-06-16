@@ -64,49 +64,59 @@ def panel_iot():
     cur = mysql.connection.cursor()
     
     if request.method == 'POST':
-        id_nodo = request.form.get('nodo')
         accion = request.form.get('action')
         
+        if accion == 'vincular':
+            id_hardware = request.form.get('id_hardware').strip()
+            nombre_nodo = request.form.get('nombre_nodo').strip()
+            
+            if not id_hardware or not nombre_nodo:
+                flash('Error: Campos obligatorios incompletos.')
+                return redirect(url_for('panel_iot'))
+            
+            try:
+                cur.execute(
+                    "INSERT INTO dispositivos (id_hardware, nombre) VALUES (%s, %s)",
+                    (id_hardware, nombre_nodo)
+                )
+                mysql.connection.commit()
+                flash(f'Dispositivo {nombre_nodo} guardado con éxito en la base de datos.')
+            except Exception as e:
+                logging.error(f"Error al insertar hardware: {e}")
+                flash('Error: El ID ingresado ya existe en la base de datos.')
+            finally:
+                cur.close()
+            return redirect(url_for('panel_iot'))
+            
+        id_nodo = request.form.get('nodo')
         if not id_nodo:
-            flash('Error: No se especificó un nodo destinatario.')
+            flash('Error: No se seleccionó ningún dispositivo.')
             return redirect(url_for('panel_iot'))
             
         try:
             if accion == 'blink':
                 topic = f"{id_nodo}/destello"
-                payload = "1"
-                publish.single(
-                    topic, payload=payload, hostname=MQTT_BROKER, 
-                    port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1
-                )
-                logging.info(f"MQTTS [OK] -> Publicado en {topic}")
-                flash(f"Comando Destello enviado con éxito al nodo {id_nodo}")
-                
+                publish.single(topic, payload="1", hostname=MQTT_BROKER, port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1)
+                flash(f"Destello enviado al ID: {id_nodo}")
             elif accion == 'setpoint':
-                valor = request.form.get('valor_setpoint')
-                valor_normalizado = valor.replace(',', '.')
+                valor = request.form.get('valor_setpoint').replace(',', '.')
                 topic = f"{id_nodo}/setpoint"
-                payload = str(float(valor_normalizado))
-                
-                publish.single(
-                    topic, payload=payload, hostname=MQTT_BROKER, 
-                    port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1
-                )
-                logging.info(f"MQTTS [OK] -> Publicado en {topic} | Valor: {payload}")
-                flash(f"Setpoint actualizado a {payload}°C en el nodo {id_nodo}")
-                
+                payload = str(float(valor))
+                publish.single(topic, payload=payload, hostname=MQTT_BROKER, port=MQTT_PORT, auth=MQTT_AUTH, tls=MQTT_TLS, qos=1)
+                flash(f"Setpoint {payload}°C enviado al ID: {id_nodo}")
         except Exception as e:
-            logging.error(f"Falla en comunicación MQTTS: {e}")
-            flash(f"Error de red: No se pudo despachar el comando por MQTTS.")
+            logging.error(f"Falla MQTT: {e}")
+            flash("Error de comunicación con el broker seguro.")
             
+        cur.close()
         return redirect(url_for('panel_iot'))
         
     try:
         cur.execute("SELECT id_hardware, nombre FROM dispositivos")
         nodos_db = cur.fetchall()
     except Exception as e:
-        logging.error(f"Error al leer nodos de la DB: {e}")
-        nodos_db = [('e663a837cb8d2c37', 'Nodo Principal (Pico_01)')]
+        logging.error(f"Error DB: {e}")
+        nodos_db = []
     finally:
         cur.close()
         
@@ -159,3 +169,50 @@ def logout():
     logging.info("el usuario {} cerró su sesión".format(session.get("user_id")))
     session.clear()
     return redirect(url_for('panel_iot'))
+
+@app.route('/iot/borrar/<id>')
+@require_login
+def borrar_nodo(id):
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("DELETE FROM dispositivos WHERE id_hardware = %s", (id,))
+        mysql.connection.commit()
+        flash(f'Dispositivo {id} desvinculado de la base de datos.')
+    except Exception as e:
+        logging.error(f"Error al eliminar hardware: {e}")
+        flash('Error: No se pudo eliminar el dispositivo.')
+    finally:
+        cur.close()
+    return redirect(url_for('panel_iot'))
+
+@app.route('/iot/editar/<id>', methods=['GET', 'POST'])
+@require_login
+def editar_nodo(id):
+    cur = mysql.connection.cursor()
+    
+    if request.method == 'POST':
+        nuevo_nombre = request.form.get('nombre_nodo').strip()
+        if not nuevo_nombre:
+            flash('Error: El nombre no puede estar vacío.')
+            return redirect(url_for('panel_iot'))
+            
+        try:
+            cur.execute("UPDATE dispositivos SET nombre = %s WHERE id_hardware = %s", (nuevo_nombre, id))
+            mysql.connection.commit()
+            flash(f'Nombre del dispositivo {id} actualizado a "{nuevo_nombre}".')
+        except Exception as e:
+            logging.error(f"Error al actualizar hardware: {e}")
+            flash('Error: No se pudieron guardar los cambios.')
+        finally:
+            cur.close()
+        return redirect(url_for('panel_iot'))
+        
+    cur.execute("SELECT id_hardware, nombre FROM dispositivos WHERE id_hardware = %s", (id,))
+    nodo = cur.fetchone()
+    cur.close()
+    
+    if not nodo:
+        flash('Error: El dispositivo solicitado no existe.')
+        return redirect(url_for('panel_iot'))
+        
+    return render_template('editar-nodo.html', nodo=nodo)
