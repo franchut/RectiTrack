@@ -1,46 +1,42 @@
-{% extends "layout.html" %}
-{% block body %}
-<div class="row pt-5">
-  <div class="col-md-4 mx-auto">
-    <div class="card shadow border-0">
-      <div class="card-header bg-dark text-white text-center py-3">
-        <h4 class="mb-0 fw-bold">Iniciar Sesión</h4>
-      </div>
-      <div class="card-body p-4">
-        
-        <form action="{{ url_for('login') }}" method="POST">
-          <div class="form-group mb-3">
-            <label for="usuario" class="form-label fw-bold text-body">Usuario</label>
-            <input type="text" 
-                   name="usuario" 
-                   id="usuario" 
-                   class="form-control form-control-lg" 
-                   placeholder="Introduce tu usuario" 
-                   required 
-                   autofocus>
-          </div>
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header text-center bg-dark text-white">
+                <h4>Iniciar Sesión</h4>
+                <small class="text-muted">Acceso al sistema RectiTrack</small>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('login') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="usuario" class="form-label">USUARIO</label>
+                        <input type="text" class="form-control" name="usuario" id="usuario" placeholder="Ingrese su usuario" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">CONTRASEÑA</label>
+                        <input type="password" class="form-control" name="password" id="password" placeholder="Ingrese su contraseña" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label d-block">TIPO DE USUARIO</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="rol" id="rol_gerente" value="gerente" checked>
+                            <label class="btn btn-outline-secondary" for="rol_gerente">Gerente</label>
 
-          <div class="form-group mb-4">
-            <label for="password" class="form-label fw-bold text-body">Contraseña</label>
-            <input type="password" 
-                   name="password" 
-                   id="password" 
-                   class="form-control form-control-lg" 
-                   placeholder="••••••••" 
-                   required>
-          </div>
+                            <input type="radio" class="btn-check" name="rol" id="rol_operario" value="operario">
+                            <label class="btn btn-outline-secondary" for="rol_operario">Operador</label>
 
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary btn-lg fw-bold">Aceptar</button>
-          </div>
-        </form>
-
-      </div>
-      <div class="card-footer bg-light text-center py-3 border-0">
-        <span class="text-muted small">¿No tienes cuenta? </span>
-        <a href="{{ url_for('registrar') }}" class="text-primary fw-bold text-decoration-none">Registrarse</a>
-      </div>
+                            <input type="radio" class="btn-check" name="rol" id="rol_cliente" value="cliente">
+                            <label class="btn btn-outline-secondary" for="rol_cliente">Cliente</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Ingresar</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('registrar') }}" class="text-decoration-none">¿No tienes cuenta? Registrarse</a>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}

@@ -1,1 +1,0 @@
-CREATE TABLE `agenda`.`usuarios` (`id` UUID NOT NULL DEFAULT UUID_V7() PRIMARY KEY , `usuario` varchar(100) UNIQUE, `hash` varchar(150) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

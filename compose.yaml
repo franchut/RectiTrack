@@ -9,8 +9,7 @@ services:
       - TZ=America/Argentina/Buenos_Aires
     volumes:
       - ./mariadb:/config
-    ports:
-      - 3306:3306
+    # Se eliminan los ports públicos (3306:3306) por seguridad; la comunicación es interna
     restart: unless-stopped
 
   phpmyadmin:
@@ -20,70 +19,9 @@ services:
     environment:
       - PMA_HOST=mariadb
       - PMA_ABSOLUTE_URI=https://${DOMINIO}:${PUERTO}/phpmyadmin/
-    ports:
-      - 8080:80
+    # Se elimina ports (8080:80) ya que SWAG resolverá la ruta /phpmyadmin/ internamente
     depends_on:
       - mariadb
-
-  clientemqtt:
-    image: clientemqtt
-    container_name: clientemqtt
-    environment:
-      - TZ=America/Argentina/Buenos_Aires 
-      - SERVIDOR=${SERVIDOR}
-      - TOPICO=${TOPICO}
-      - MARIADB_SERVER=${MARIADB_SERVER}
-      - MARIADB_USER=${MARIADB_USER}
-      - MARIADB_USER_PASS=${MARIADB_USER_PASS}
-      - MARIADB_DB=${MARIADB_DB}
-      - MQTT_USR=${MQTT_USR}
-      - MQTT_PASS=${MQTT_PASS}
-      - PUERTO_MQTTS=${PUERTO_MQTTS}
-    restart: unless-stopped
-    depends_on:
-      - mariadb
-
-  mosquitto:
-    image: eclipse-mosquitto
-    container_name: mosquitto
-    user: "1000:1000"
-    ports:
-      - 1883:1883
-      - ${PUERTO_MQTTS}:8883
-    restart: unless-stopped
-    volumes:
-      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./mosquitto/config:/mosquitto/config
-      - ./swag/etc/letsencrypt:/var/tmp
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
-
-  grafana:
-    image: grafana/grafana-oss
-    container_name: grafana
-    user: "1000"
-    volumes:
-      - ./grafana:/var/lib/grafana
-    ports:
-      - 3000:3000
-    depends_on:
-      - mariadb
-    environment:
-      GF_SERVER_PROTOCOL: http
-      GF_SERVER_ROOT_URL: https://${DOMINIO}:${PUERTO}/grafana/
-      GF_SERVER_DOMAIN: https://${DOMINIO}
-      GF_ANALYTICS_REPORTING_ENABLED: "false"
-    restart: unless-stopped
-
-  portainer:
-    image: portainer/portainer-ce
-    container_name: portainer
-    ports:
-      - 9443:9443
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-    restart: unless-stopped
 
   swag:
     image: lscr.io/linuxserver/swag:latest
@@ -105,20 +43,6 @@ services:
       - 80:80
     restart: unless-stopped
 
-  telegrambot:
-    image: telegrambot
-    container_name: telegrambot
-    environment:
-      - TZ=America/Argentina/Buenos_Aires 
-      - TB_TOKEN=${TB_TOKEN}
-      - MARIADB_SERVER=${MARIADB_SERVER}
-      - MARIADB_USER=${MARIADB_USER}
-      - MARIADB_USER_PASS=${MARIADB_USER_PASS}
-      - MARIADB_DB=${MARIADB_DB}
-    restart: unless-stopped
-    depends_on:
-      - mariadb
-
   crud:
     image: crud
     build:
@@ -130,15 +54,8 @@ services:
       - MYSQL_DB=${CRUD_DB}
       - MYSQL_HOST=${MARIADB_SERVER}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
-      - MQTT_BROKER=${SERVIDOR}
-      - MQTT_PORT=${PUERTO_MQTTS}
-      - MQTT_USER=${MQTT_USR}
-      - MQTT_PASS=${MQTT_PASS}
-    ports:
-      - "8000:8000"
+      # Se remueven variables de MQTT_BROKER, MQTT_USER, etc., por ser redundantes para la web
+    # Se elimina ports ("8000:8000") para obligar el tráfico a través del puerto único de SWAG
     restart: unless-stopped
     depends_on:
       - mariadb
-
-volumes:
-  portainer_data:
