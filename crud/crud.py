@@ -1,4 +1,5 @@
 import os
+import uuid
 import logging
 from datetime import datetime
 from functools import wraps
@@ -166,16 +167,77 @@ def asignar_tareas():
     
     cur.execute("SELECT id_operario, nombre, apellido FROM Operario")
     operarios = cur.fetchall()
-    
+
     cur.execute("""
         SELECT ot.id_orden, m.codigo_qr, m.marca, m.modelo 
         FROM OrdenTrabajo ot 
-        JOIN Motor m ON ot.id_motor = m.id_motor
+        JOIN Motor m ON ot.id_motor = m.id_motor 
+        WHERE ot.id_orden NOT IN (
+            SELECT id_orden FROM Tarea WHERE estado_tarea IN ('PENDIENTE', 'EN_PROCESO')
+        )
     """)
     ordenes = cur.fetchall()
     cur.close()
     
     return render_template('asignar_tareas.html', areas=areas, operarios=operarios, ordenes=ordenes)
+
+
+@app.route('/panel-gerente/ingreso', methods=['GET', 'POST'])
+@require_gerente
+def ingreso_motor():
+    if request.method == 'POST':
+        dni = request.form.get('dni')
+        nombre_cliente = request.form.get('nombre_cliente')
+        apellido_cliente = request.form.get('apellido_cliente')
+        telefono = request.form.get('telefono')
+        email = request.form.get('email')
+        marca = request.form.get('marca')
+        modelo = request.form.get('modelo')
+        nro_serie_bloque = request.form.get('nro_serie_bloque')
+        fecha_entrega_estimada = request.form.get('fecha_entrega_estimada')
+        origen_repuestos = request.form.get('origen_repuestos')
+
+        # Safe float parsing
+        monto_total = float(request.form.get('monto_total') or 0.0)
+        anticipo = float(request.form.get('anticipo') or 0.0)
+        saldo = monto_total - anticipo
+
+        # Programmatically generate unique QR code
+        generated_qr = f"QR-{int(datetime.now().timestamp())}"
+
+        cur = mysql.connection.cursor()
+        try:
+            # 1. Insert Client (if not exists)
+            cur.execute("""
+                INSERT IGNORE INTO Cliente (dni, nombre, apellido, telefono, email)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (dni, nombre_cliente, apellido_cliente, telefono, email))
+            
+            # 2. Insert Motor
+            cur.execute("""
+                INSERT INTO Motor (codigo_qr, marca, modelo, nro_serie_bloque, dni_cliente)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (generated_qr, marca, modelo, nro_serie_bloque, dni))
+            id_motor = cur.lastrowid
+            
+            # 3. Insert Work Order (OrdenTrabajo)
+            cur.execute("""
+                INSERT INTO OrdenTrabajo (id_motor, fecha_ingreso, fecha_entrega_estimada, monto_total, saldo_pendiente, estado_general, origen_repuestos)
+                VALUES (%s, NOW(), %s, %s, %s, 'EN_PROCESO', %s)
+            """, (id_motor, fecha_entrega_estimada, monto_total, saldo, origen_repuestos))
+            
+            mysql.connection.commit()
+            flash('Motor y Orden de Trabajo registrados exitosamente.')
+            return redirect(url_for('panel_gerente'))
+        except Exception as e:
+            mysql.connection.rollback()
+            logging.error(f"Falla en registro de motor/OT: {e}")
+            flash('Error al intentar registrar el motor o la orden de trabajo. Verifique los datos.')
+            return redirect(url_for('ingreso_motor'))
+        finally:
+            cur.close()
+
+    return render_template('ingreso_motor.html')
 
 @app.route('/panel-gerente/stock')
 @require_gerente

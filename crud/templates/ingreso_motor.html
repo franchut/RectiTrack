@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Barra superior del módulo -->
+        <div class="position-relative d-flex align-items-center justify-content-center mb-4 py-2" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <a href="{{ url_for('panel_gerente') }}" class="position-absolute start-0 text-dark d-flex align-items-center" aria-label="Volver">
+                <i class="bi bi-arrow-left fs-4"></i>
+            </a>
+            <span class="fw-bold text-dark" style="font-size: 1.1rem; letter-spacing: -0.02em;">RECTITRACK</span>
+            <span class="position-absolute end-0 text-secondary small font-monospace">MODO GERENTE</span>
+        </div>
+
+        <!-- Título del módulo fuera de la tarjeta -->
+        <div class="mb-3">
+            <h2 class="fw-bold text-dark" style="font-size: 1.5rem; letter-spacing: -0.01em;">Registrar Ingreso de Motor</h2>
+        </div>
+
+        <!-- Tarjeta blanca con bordes redondeados -->
+        <div class="card border-0 shadow-sm" style="border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 0.625rem; background-color: #ffffff;">
+            <div class="card-body p-4">
+                <form action="{{ url_for('ingreso_motor') }}" method="POST">
+                    
+                    <div class="row g-4">
+                        <!-- Datos del Cliente -->
+                        <div class="col-md-6">
+                            <fieldset class="border p-3 rounded" style="border-color: rgba(0,0,0,0.08) !important;">
+                                <legend class="float-none w-auto px-2 small fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Datos del Cliente</legend>
+                                
+                                <div class="mb-3">
+                                    <label for="dni" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">DNI</label>
+                                    <input type="text" class="form-control" name="dni" id="dni" placeholder="DNI del cliente" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nombre_cliente" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Nombre</label>
+                                    <input type="text" class="form-control" name="nombre_cliente" id="nombre_cliente" placeholder="Nombre" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="apellido_cliente" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Apellido</label>
+                                    <input type="text" class="form-control" name="apellido_cliente" id="apellido_cliente" placeholder="Apellido" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="telefono" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Teléfono</label>
+                                    <input type="tel" class="form-control" name="telefono" id="telefono" placeholder="Teléfono del cliente" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Email</label>
+                                    <input type="email" class="form-control" name="email" id="email" placeholder="Email del cliente" required>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Datos del Motor -->
+                        <div class="col-md-6">
+                            <fieldset class="border p-3 rounded" style="border-color: rgba(0,0,0,0.08) !important;">
+                                <legend class="float-none w-auto px-2 small fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Datos del Motor</legend>
+                                
+                                <div class="mb-3">
+                                    <label for="marca" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Marca</label>
+                                    <input type="text" class="form-control" name="marca" id="marca" placeholder="Marca del motor" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="modelo" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Modelo</label>
+                                    <input type="text" class="form-control" name="modelo" id="modelo" placeholder="Modelo del motor" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nro_serie_bloque" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Nro de Serie de Bloque</label>
+                                    <input type="text" class="form-control" name="nro_serie_bloque" id="nro_serie_bloque" placeholder="Número de serie de bloque" required>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Datos de la Orden & Facturación -->
+                        <div class="col-12">
+                            <fieldset class="border p-3 rounded" style="border-color: rgba(0,0,0,0.08) !important;">
+                                <legend class="float-none w-auto px-2 small fw-bold text-secondary text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">Datos de la Orden &amp; Facturación</legend>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="monto_total" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Monto Total</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">$</span>
+                                            <input type="number" step="0.01" class="form-control" name="monto_total" id="monto_total" placeholder="0.00" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="anticipo" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Anticipo</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">$</span>
+                                            <input type="number" step="0.01" class="form-control" name="anticipo" id="anticipo" placeholder="0.00" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3 mb-md-0">
+                                        <label for="fecha_entrega_estimada" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Fecha de Entrega Estimada</label>
+                                        <input type="date" class="form-control" name="fecha_entrega_estimada" id="fecha_entrega_estimada" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="origen_repuestos" class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase;">Origen de Repuestos</label>
+                                        <input type="text" class="form-control" name="origen_repuestos" id="origen_repuestos" placeholder="Ej: Taller o Cliente" required>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="{{ url_for('panel_gerente') }}" class="btn w-50 py-2" style="background-color: #f3f4f6; color: #374151; font-weight: 500; border-radius: 0.5rem; border: none; text-align: center; font-size: 0.875rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Cancelar</a>
+                        <button type="submit" class="btn w-50 py-2" style="background-color: #ff6600; color: #ffffff; font-weight: bold; border-radius: 0.5rem; border: none; font-size: 0.875rem;">Guardar Registro</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
