@@ -4,19 +4,16 @@ import os
 import logging
 from functools import wraps
 from werkzeug.middleware.proxy_fix import ProxyFix
+from datetime import datetime
 
 logging.basicConfig(format='%(asctime)s - RECTITRACK - %(levelname)s - %(message)s', level=logging.INFO)
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-app.wsgi_app = ProxyFix(
-    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
-)
-
-# Configuración de variables de entorno (Deben coincidir con tu compose.yaml)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "rectitrack_secret_key_2026")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "rectitrack_secure_key_2026")
 app.config["MYSQL_USER"] = os.environ.get("MYSQL_USER", "root")
-app.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD", "root") # Cambiar por tu MARIADB_ROOT_PASSWORD
+app.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD", "root")
 app.config["MYSQL_DB"] = "rectitrack_db"
 app.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST", "mariadb")
 app.config['PERMANENT_SESSION_LIFETIME'] = 180
@@ -26,133 +23,94 @@ mysql = MySQL(app)
 def require_gerente(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Fuerza el login automático como Gerente para desarrollo visual inmediato
-        if not session.get("user_id"):
-            session["user_id"] = "Gerente_Principal"
-            session["role"] = "gerente"
+        session["user_id"] = "Gerente_Principal"
+        session["role"] = "gerente"
         return f(*args, **kwargs)
     return decorated_function
 
 @app.route('/')
 @require_gerente
 def index():
-    return redirect(url_for('panel_iot'))
+    return redirect(url_for('panel_gerente'))
 
-# Panel Principal del Gerente (Mapeado a iot.html)
-@app.route('/iot', methods=['GET', 'POST'])
+@app.route('/panel-gerente')
 @require_gerente
-def panel_iot():
+def panel_gerente():
+    return render_template('panel_gerente.html')
+
+@app.route('/panel-gerente/asignar', methods=['GET', 'POST'])
+@require_gerente
+def asignar_tareas():
     cur = mysql.connection.cursor()
-    
     if request.method == 'POST':
-        accion = request.form.get('action')
-        
-        # RF01: Registrar Ingreso de Motor y vincular datos técnicos
-        if accion == 'vincular':
-            id_motor_qr = request.form.get('id_hardware').strip() # Campo QR/ID del formulario
-            detalles = request.form.get('nombre_nodo').strip()     # Campo Especificaciones
-            
-            if not id_motor_qr or not detalles:
-                flash('Error: Campos obligatorios incompletos.')
-                return redirect(url_for('panel_iot'))
-            
-            try:
-                # Para testing rápido, asumimos un cliente genérico DNI 1 o creamos uno si no existe
-                cur.execute("INSERT IGNORE INTO Cliente (dni, nombre, apellido, telefono, login, password) VALUES (1, 'Cliente', 'Genérico', '123', 'cli', '123')")
-                
-                # Insertar en la tabla Motor
-                cur.execute(
-                    "INSERT INTO Motor (codigo_qr, marca, modelo, nro_serie_bloque, dni_cliente) VALUES (%s, %s, %s, %s, %s)",
-                    (id_motor_qr, "Marca_Ver", "Modelo_Ver", id_motor_qr, 1)
-                )
-                id_motor_insertado = cur.lastrowid
-                
-                # Crear la Orden de Trabajo base (RF03)
-                cur.execute(
-                    "INSERT INTO OrdenTrabajo (fecha_ingreso, fecha_entrega_estimada, monto_total, saldo_pendiente, estado_general, origen_repuestos, id_motor) VALUES (NOW(), NOW(), 0, 0, 'CREADO', 'RECTIFICADORA', %s)",
-                    (id_motor_insertado,)
-                )
-                
-                mysql.connection.commit()
-                flash(f'Motor [{id_motor_qr}] registrado exitosamente en la base de datos.')
-            except Exception as e:
-                logging.error(f"Error al insertar motor: {e}")
-                flash('Error: El ID de motor o número de serie ya existe en el sistema.')
-            finally:
-                cur.close()
-            return redirect(url_for('panel_iot'))
-            
-    # Lectura de datos reales para poblar la tabla del Gerente
-    try:
-        cur.execute("SELECT codigo_qr, CONCAT(marca, ' ', modelo, ' - QR: ', codigo_qr) FROM Motor")
-        motores_db = cur.fetchall()
-    except Exception as e:
-        logging.error(f"Error al leer base de datos: {e}")
-        motores_db = []
-    finally:
-        cur.close()
-        
-    return render_template('iot.html', nodos=motores_db)
+        id_orden = request.form.get('id_orden')
+        id_operario = request.form.get('id_operario')
+        id_area = request.form.get('id_area')
+        descripcion = request.form.get('descripcion')
 
-@app.route('/iot/borrar/<id>')
-@require_gerente
-def borrar_nodo(id):
-    cur = mysql.connection.cursor()
-    try:
-        cur.execute("DELETE FROM Motor WHERE codigo_qr = %s", (id,))
-        mysql.connection.commit()
-        flash(f'Registro del motor {id} eliminado de la base de datos.')
-    except Exception as e:
-        logging.error(f"Error al eliminar motor: {e}")
-        flash('Error: No se pudo eliminar el motor (Verifique restricciones de integridad).')
-    finally:
-        cur.close()
-    return redirect(url_for('panel_iot'))
-
-@app.route('/iot/editar/<id>', methods=['GET', 'POST'])
-@require_gerente
-def editar_nodo(id):
-    cur = mysql.connection.cursor()
-    
-    if request.method == 'POST':
-        nuevo_detalle = request.form.get('nombre_nodo').strip()
-        if not nuevo_detalle:
-            flash('Error: Las especificaciones no pueden estar vacías.')
-            return redirect(url_for('panel_iot'))
-            
         try:
-            cur.execute("UPDATE Motor SET modelo = %s WHERE codigo_qr = %s", (nuevo_detalle, id))
+            cur.execute("""
+                INSERT INTO Tarea (descripcion_trabajo, estado_tarea, fecha_actualizacion, id_orden, id_operario, id_area)
+                VALUES (%s, 'PENDIENTE', %s, %s, %s, %s)
+            """, (descripcion, datetime.now(), id_orden, id_operario, id_area))
             mysql.connection.commit()
-            flash(f'Ficha técnica del motor {id} actualizada con éxito.')
+            flash('Tarea asignada con Éxito.')
         except Exception as e:
-            logging.error(f"Error al actualizar motor: {e}")
-            flash('Error: No se pudieron guardar los cambios.')
+            logging.error(f"Falla DML: {e}")
+            flash('Error técnico al intentar persistir la tarea.', 'error')
         finally:
             cur.close()
-        return redirect(url_for('panel_iot'))
-        
-    cur.execute("SELECT codigo_qr, modelo FROM Motor WHERE codigo_qr = %s", (id,))
-    nodo = cur.fetchone()
+        return redirect(url_for('asignar_tareas'))
+
+    cur.execute("SELECT id_area, nombre_area FROM Area")
+    areas = cur.fetchall()
+    cur.execute("SELECT id_operario, nombre, apellido FROM Operario")
+    operarios = cur.fetchall()
+    cur.execute("""
+        SELECT ot.id_orden, m.codigo_qr, m.marca, m.modelo 
+        FROM OrdenTrabajo ot JOIN Motor m ON ot.id_motor = m.id_motor
+    """)
+    ordenes = cur.fetchall()
     cur.close()
-    
-    if not nodo:
-        flash('Error: El motor solicitado no existe.')
-        return redirect(url_for('panel_iot'))
-        
-    return render_template('editar-nodo.html', nodo=nodo)
+    return render_template('asignar_tareas.html', areas=areas, operarios=operarios, ordenes=ordenes)
 
-@app.route("/login")
-def login():
-    return redirect(url_for('panel_iot'))
+@app.route('/panel-gerente/stock')
+@require_gerente
+def gestionar_stock():
+    return render_template('gestionar_stock.html')
 
-@app.route("/registrar")
-def registrar():
-    return redirect(url_for('panel_iot'))
+@app.route('/panel-gerente/pagos')
+@require_gerente
+def gestionar_pagos():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT ot.id_orden, m.codigo_qr, c.nombre, c.apellido, ot.monto_total, 
+               (ot.monto_total - ot.saldo_pendiente) AS anticipo, ot.saldo_pendiente
+        FROM OrdenTrabajo ot 
+        JOIN Motor m ON ot.id_motor = m.id_motor
+        JOIN Cliente c ON m.dni_cliente = c.dni
+    """)
+    pagos = cur.fetchall()
+    cur.close()
+    return render_template('gestionar_pagos.html', pagos=pagos)
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for('panel_iot'))
+@app.route('/panel-gerente/progreso')
+@require_gerente
+def progreso_motores():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT m.codigo_qr, o.nombre, o.apellido, 
+               CASE WHEN ot.estado_general = 'HECHO' THEN 100 WHEN ot.estado_general = 'EN_PROCESO' THEN 50 ELSE 10 END,
+               ot.estado_general
+        FROM OrdenTrabajo ot
+        JOIN Motor m ON ot.id_motor = m.id_motor
+        LEFT JOIN Tarea t ON ot.id_orden = t.id_orden
+        LEFT JOIN Operario o ON t.id_operario = o.id_operario
+        GROUP BY ot.id_orden
+    """)
+    progresos = cur.fetchall()
+    cur.close()
+    return render_template('progreso_motores.html', progresos=progresos)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
