@@ -1,40 +1,68 @@
 {% extends 'layout.html' %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
-            <div class="card-header text-center bg-dark text-white">
-                <h4>Iniciar Sesión</h4>
-                <small class="text-muted">Acceso al sistema RectiTrack</small>
-            </div>
+<div class="row justify-content-center mt-5" style="max-width: 100%;">
+    <div class="col-md-12">
+        <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Logo RectiTrack" height="80" class="mb-2">
+            <h3 class="fw-bold mt-2">RECTITRACK</h3>
+            <small class="text-muted">Gestión de Motores con Precisión Digital</small>
+        </div>
+
+        <div class="card shadow border-0 p-3" style="background-color: #162a45; border-radius: 1rem; color: #ffffff;">
             <div class="card-body">
+                <h4 class="text-center fw-bold mb-1">Iniciar Sesión</h4>
+                <p class="text-center small text-white-50 mb-4">Acceso al sistema RectiTrack</p>
+
                 <form action="{{ url_for('login') }}" method="POST">
                     <div class="mb-3">
-                        <label for="usuario" class="form-label">USUARIO</label>
-                        <input type="text" class="form-control" name="usuario" id="usuario" placeholder="Ingrese su usuario" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">CONTRASEÑA</label>
-                        <input type="password" class="form-control" name="password" id="password" placeholder="Ingrese su contraseña" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label d-block">TIPO DE USUARIO</label>
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="rol" id="rol_gerente" value="gerente" checked>
-                            <label class="btn btn-outline-secondary" for="rol_gerente">Gerente</label>
-
-                            <input type="radio" class="btn-check" name="rol" id="rol_operario" value="operario">
-                            <label class="btn btn-outline-secondary" for="rol_operario">Operador</label>
-
-                            <input type="radio" class="btn-check" name="rol" id="rol_cliente" value="cliente">
-                            <label class="btn btn-outline-secondary" for="rol_cliente">Cliente</label>
+                        <label for="usuario" class="form-label small fw-bold">USUARIO</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-secondary border-0 text-white"><i
+                                    class="bi bi-person"></i></span>
+                            <input type="text" class="form-control bg-dark text-white border-0" name="usuario"
+                                id="usuario" placeholder="Ingrese su usuario" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">Ingresar</button>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label small fw-bold">CONTRASEÑA</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-secondary border-0 text-white"><i
+                                    class="bi bi-lock"></i></span>
+                            <input type="password" class="form-control bg-dark text-white border-0" name="password"
+                                id="password" placeholder="Ingrese su contraseña" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold d-block text-white-50">TIPO DE USUARIO</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="rol" id="rol_gerente" value="gerente" checked>
+                            <label class="btn btn-outline-warning border-secondary text-white py-2"
+                                for="rol_gerente">Gerente</label>
+
+                            <input type="radio" class="btn-check" name="rol" id="rol_operario" value="operario">
+                            <label class="btn btn-outline-warning border-secondary text-white py-2"
+                                for="rol_operario">Operador</label>
+
+                            <input type="radio" class="btn-check" name="rol" id="rol_cliente" value="cliente">
+                            <label class="btn btn-outline-warning border-secondary text-white py-2"
+                                for="rol_cliente">Cliente</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 py-2 fw-bold mb-3"
+                        style="border-radius: 0.5rem; color: #162a45;">Ingresar</button>
+                    
+                    <div class="text-center my-3 border-top border-secondary pt-3">
+                        <a href="{{ url_for('registrar') }}" class="text-warning text-decoration-none small fw-bold">¿No posee credenciales? Crear cuenta de Gerente</a>
+                    </div>
                 </form>
-            </div>
-            <div class="card-footer text-center">
-                <a href="{{ url_for('registrar') }}" class="text-decoration-none">¿No tienes cuenta? Registrarse</a>
+
+                <div class="text-center pt-2 border-top border-secondary">
+                    <small class="text-white-50">Gerente: admin / admin</small><br>
+                    <small class="text-white-50">Operador: se valida en tabla Operario</small>
+                </div>
             </div>
         </div>
     </div>

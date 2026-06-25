@@ -49,13 +49,11 @@ services:
       context: ./crud
     container_name: crud
     environment:
-      - MYSQL_USER=${CRUD_USER}
-      - MYSQL_PASSWORD=${CRUD_PASS}
-      - MYSQL_DB=${CRUD_DB}
-      - MYSQL_HOST=${MARIADB_SERVER}
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_DB=rectitrack_db
+      - MYSQL_HOST=mariadb
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
-      # Se remueven variables de MQTT_BROKER, MQTT_USER, etc., por ser redundantes para la web
-    # Se elimina ports ("8000:8000") para obligar el tráfico a través del puerto único de SWAG
     restart: unless-stopped
     depends_on:
       - mariadb

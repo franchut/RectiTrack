@@ -2,43 +2,63 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-rectitrack text-white d-flex align-items-center">
-                <a href="{{ url_for('panel_gerente') }}" class="text-white me-3"><i
-                        class="bi bi-arrow-left fs-4"></i></a>
-                <h5 class="mb-0 fw-bold">Gestión de Pagos</h5>
-            </div>
-            <div class="card-body">
-                {% for pago in pagos %}
-                <div class="p-3 mb-3 border rounded shadow-sm">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-bold text-primary">Motor #{{ p[1] }}</span>
-                        <small class="text-muted">{{ p[2] }} {{ p[3] }}</small>
-                    </div>
-                    <div class="row text-center mb-3">
-                        <div class="col-4">
-                            <small class="text-muted d-block">Total</small>
-                            <span class="fw-bold">${{ p[4] }}</span>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted d-block">Anticipos</small>
-                            <span class="text-success fw-bold">${{ p[5] }}</span>
-                        </div>
-                        <div class="col-4">
-                            <small class="text-muted d-block">Saldo</small>
-                            <span class="{{ 'text-danger' if p[6] > 0 else 'text-success' }} fw-bold">${{ p[6] }}</span>
-                        </div>
-                    </div>
-                    {% if p[6] > 0 %}
-                    <button class="btn btn-orange btn-sm w-100 fw-bold">Registrar Pago [cite: 899, 927]</button>
-                    {% else %}
-                    <div class="alert alert-success p-1 text-center small mb-0 fw-bold">Pagado Completo [cite: 940]
-                    </div>
-                    {% endif %}
+        <!-- Barra superior del módulo -->
+        <div class="position-relative d-flex align-items-center justify-content-center mb-4 py-2" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <a href="{{ url_for('panel_gerente') }}" class="position-absolute start-0 text-dark d-flex align-items-center" aria-label="Volver">
+                <i class="bi bi-arrow-left fs-4"></i>
+            </a>
+            <span class="fw-bold text-dark" style="font-size: 1.1rem; letter-spacing: -0.02em;">RECTITRACK</span>
+            <span class="position-absolute end-0 text-secondary small font-monospace">MODO GERENTE</span>
+        </div>
+
+        <!-- Título del módulo fuera de las tarjetas -->
+        <div class="mb-4">
+            <h2 class="fw-bold text-dark" style="font-size: 1.5rem; letter-spacing: -0.01em;">Gestión de Pagos</h2>
+        </div>
+
+        <!-- Lista de tarjetas para cada motor -->
+        {% for pago in pagos %}
+        <div class="card border-0 shadow-sm mb-3" style="border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 0.625rem; background-color: #ffffff;">
+            <div class="card-body p-4">
+                <!-- Cabecera de la tarjeta -->
+                <div class="mb-3">
+                    <h5 class="fw-bold text-dark mb-1" style="font-size: 1.1rem; letter-spacing: -0.01em;">Motor #{{ pago[1] }}</h5>
+                    <small class="text-secondary d-block">Cliente: {{ pago[2] }} {{ pago[3] }}</small>
                 </div>
-                {% endfor %}
+
+                <!-- Grilla de tres columnas para los valores financieros -->
+                <div class="row text-center mb-3 py-2.5 mx-0" style="background-color: #f9fafb; border-radius: 0.5rem; border: 1px solid rgba(0,0,0,0.02);">
+                    <div class="col-4 border-end">
+                        <small class="text-secondary d-block" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 500; letter-spacing: 0.02em;">Total</small>
+                        <span class="fw-bold text-dark" style="font-size: 0.95rem;">${{ pago[4] }}</span>
+                    </div>
+                    <div class="col-4 border-end">
+                        <small class="text-secondary d-block" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 500; letter-spacing: 0.02em;">Anticipos</small>
+                        <span class="fw-bold" style="color: #198754; font-size: 0.95rem;">${{ pago[5] }}</span>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-secondary d-block" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 500; letter-spacing: 0.02em;">Saldo</small>
+                        {% if pago[6]|float > 0 %}
+                        <span class="fw-bold text-danger" style="font-size: 0.95rem;">${{ pago[6] }}</span>
+                        {% else %}
+                        <span class="fw-bold" style="color: #198754; font-size: 0.95rem;">$0</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Botón de acción según saldo -->
+                {% if pago[6]|float > 0 %}
+                    {% if pago[5]|float == 0 %}
+                    <button class="btn w-100 fw-bold" style="background-color: #ff6600; color: white; border-radius: 0.5rem; border: none; font-size: 0.875rem; padding: 0.625rem 0; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#e65c00'" onmouseout="this.style.backgroundColor='#ff6600'">Registrar Anticipo</button>
+                    {% else %}
+                    <button class="btn w-100 fw-bold" style="background-color: #ff6600; color: white; border-radius: 0.5rem; border: none; font-size: 0.875rem; padding: 0.625rem 0; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#e65c00'" onmouseout="this.style.backgroundColor='#ff6600'">Registrar Pago</button>
+                    {% endif %}
+                {% else %}
+                    <button class="btn w-100 fw-bold" disabled style="background-color: #f3f4f6; color: #9ca3af; border-radius: 0.5rem; border: none; font-size: 0.875rem; padding: 0.625rem 0; cursor: not-allowed;">Pagado Completo</button>
+                {% endif %}
             </div>
         </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

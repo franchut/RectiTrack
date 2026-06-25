@@ -2,53 +2,68 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card shadow-sm border-0 rounded-3">
-            <div class="card-header bg-rectitrack text-white d-flex align-items-center">
-                <a href="{{ url_for('panel_gerente') }}" class="text-white me-3"><i
-                        class="bi bi-arrow-left fs-4"></i></a>
-                <h5 class="mb-0 fw-bold">Asignar Tareas</h5>
-            </div>
-            <div class="card-body">
+        <!-- Barra superior del módulo -->
+        <div class="position-relative d-flex align-items-center justify-content-center mb-4 py-2" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+            <a href="{{ url_for('panel_gerente') }}" class="position-absolute start-0 text-dark d-flex align-items-center" aria-label="Volver">
+                <i class="bi bi-arrow-left fs-4"></i>
+            </a>
+            <span class="fw-bold text-dark" style="font-size: 1.1rem; letter-spacing: -0.02em;">RECTITRACK</span>
+            <span class="position-absolute end-0 text-secondary small font-monospace">MODO GERENTE</span>
+        </div>
+
+        <!-- Título del módulo fuera de la tarjeta -->
+        <div class="mb-3">
+            <h2 class="fw-bold text-dark" style="font-size: 1.5rem; letter-spacing: -0.01em;">Asignar Tareas</h2>
+        </div>
+
+        <!-- Tarjeta blanca con bordes redondeados -->
+        <div class="card border-0 shadow-sm" style="border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 0.625rem; background-color: #ffffff;">
+            <div class="card-body p-4">
                 <form action="{{ url_for('asignar_tareas') }}" method="POST">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Área</label>
+                        <label class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Área</label>
                         <select class="form-select" name="id_area" required>
-                            <option value="">Seleccione un área [cite: 870]</option>
+                            <option value="">Seleccione un área</option>
                             {% for area in areas %}
                             <option value="{{ area[0] }}">{{ area[1] }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Motor</label>
+                        <label class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Motor</label>
                         <select class="form-select" name="id_orden" required>
-                            <option value="">Seleccione un motor [cite: 877]</option>
+                            <option value="">Seleccione un motor</option>
                             {% for orden in ordenes %}
-                            <option value="{{ orden[0] }}">Motor #{{ orden[1] }} - {{ orden[2] }} {{ orden[3] }}
-                            </option>
+                            <option value="{{ orden[0] }}">Motor #{{ orden[1] }} - {{ orden[2] }} {{ orden[3] }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Operario</label>
+                        <label class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Operario</label>
                         <select class="form-select" name="id_operario" required>
-                            <option value="">Seleccione un operario [cite: 879]</option>
+                            <option value="">Seleccione un operario</option>
                             {% for operario in operarios %}
                             <option value="{{ operario[0] }}">{{ operario[1] }} {{ operario[2] }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Descripción de la Tarea</label>
-                        <textarea class="form-control" name="descripcion" rows="3"
-                            placeholder="Describa las instrucciones específicas para esta tarea... [cite: 881]"
-                            required></textarea>
+                        <label class="form-label mb-1" style="font-size: 0.75rem; color: #4b5563; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Descripción de la Tarea</label>
+                        <textarea class="form-control" name="descripcion" rows="3" placeholder="Describa las instrucciones específicas para esta tarea..." required></textarea>
                     </div>
-                    <div class="d-flex gap-2">
-                        <a href="{{ url_for('panel_gerente') }}" class="btn btn-secondary w-50">Cancelar [cite: 893]</a>
-                        <button type="submit" class="btn btn-orange w-50 fw-bold">Guardar [cite: 894]</button>
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="{{ url_for('panel_gerente') }}" class="btn w-50 py-2" style="background-color: #f3f4f6; color: #374151; font-weight: 500; border-radius: 0.5rem; border: none; text-align: center; font-size: 0.875rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Cancelar</a>
+                        <button type="submit" class="btn w-50 py-2" style="background-color: #ff6600; color: #ffffff; font-weight: bold; border-radius: 0.5rem; border: none; font-size: 0.875rem;">Guardar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Bloque de alerta azul claro inferior -->
+        <div class="alert p-3 d-flex align-items-start gap-2 mt-4" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 0.625rem; color: #0369a1;">
+            <i class="bi bi-info-circle-fill fs-5 mt-0.5" style="color: #0284c7; line-height: 1;"></i>
+            <div class="small" style="line-height: 1.4;">
+                Complete todos los campos para asignar una tarea a un operario. La asignación se registrará inmediatamente.
             </div>
         </div>
     </div>

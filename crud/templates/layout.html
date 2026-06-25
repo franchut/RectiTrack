@@ -4,60 +4,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RECTITRACK - Modo Gerente</title>
+    <title>RECTITRACK - Panel Gerente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #030213;
+            --card: #ffffff;
+            --primary: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --destructive: #d4183d;
+            --border: rgba(0, 0, 0, 0.1);
+            --radius: 0.625rem;
+        }
+
         body {
-            background-color: #f4f6f9;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .bg-rectitrack {
-            background-color: #0b2545;
+            background-color: var(--primary);
         }
 
         .card-custom {
-            border: none;
-            border-radius: 12px;
-            transition: transform 0.2s;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background-color: var(--card);
+            transition: background-color 0.2s;
         }
 
         .card-custom:hover {
-            transform: translateY(-2s);
+            background-color: var(--accent);
         }
 
-        .btn-orange {
-            background-color: #f3722c;
+        .btn-primary-custom {
+            background-color: var(--primary);
             color: white;
-            fw-bold;
+            border-radius: var(--radius);
         }
 
-        .btn-orange:hover {
-            background-color: #f94144;
+        .btn-primary-custom:hover {
+            background-color: #1a1929;
             color: white;
+        }
+
+        .alert-custom {
+            background-color: var(--muted);
+            color: var(--foreground);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
         }
     </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg bg-rectitrack navbar-dark shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('panel_gerente') }}">
-                <i class="bi bi-gear-wide-connected text-warning"></i> RECTITRACK
+    <nav class="navbar navbar-expand bg-white py-3" style="border-bottom: 1px solid rgba(0, 0, 0, 0.05);">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand fw-bold text-dark d-flex align-items-center m-0" href="{{ url_for('panel_gerente') }}" style="font-size: 1.1rem; letter-spacing: -0.02em;">
+                <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="Logo RectiTrack" height="40" class="me-2"> RECTITRACK
             </a>
-            <span class="navbar-text text-white-50 ms-auto">Modo Gerente <i
-                    class="bi bi-box-arrow-right ms-2"></i></span>
+            {% if session.get('role') == 'gerente' %}
+            <div class="d-flex align-items-center gap-3">
+                <span class="navbar-text text-secondary small font-monospace p-0">MODO GERENTE</span>
+                <a href="{{ url_for('logout') }}" class="text-secondary d-flex align-items-center" aria-label="Cerrar sesión" style="transition: color 0.2s;">
+                    <i class="bi bi-box-arrow-right fs-5"></i>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </nav>
     <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% with messages = get_flashed_messages() %}
         {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show"
-            role="alert">
+        {% for message in messages %}
+        <div class="alert alert-custom alert-dismissible fade show small" role="alert">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
         {% endfor %}
         {% endif %}
